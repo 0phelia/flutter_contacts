@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_contacts/config.dart';
 import 'package:flutter_contacts/contact.dart';
 import 'package:flutter_contacts/diacritics.dart';
+import 'package:flutter_contacts/properties/group.dart';
 
 export 'contact.dart';
 export 'properties/account.dart';
@@ -21,7 +22,7 @@ export 'properties/website.dart';
 class FlutterContacts {
   static const _channel = MethodChannel('github.com/QuisApp/flutter_contacts');
   static const _eventChannel =
-      EventChannel('github.com/QuisApp/flutter_contacts/events');
+  EventChannel('github.com/QuisApp/flutter_contacts/events');
   // The linter is confused by this. It's the caller's responsibility to call
   // removeListener when appropriate.
   // ignore: cancel_subscriptions
@@ -83,6 +84,20 @@ class FlutterContacts {
         deduplicateProperties: deduplicateProperties,
       );
 
+  static Future<List<Group>> getGroups({
+    bool sorted = true,
+    bool deduplicateProperties = true,
+  }) async {
+    List untypedGroups = await _channel.invokeMethod('groups');
+    var groups = untypedGroups
+        .map((x) => Group.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
+    if (sorted) {
+      groups.sort(_compareGroupNames);
+    }
+    return groups;
+  }
+
   /// Fetches one contact.
   ///
   /// By default everything available is fetched. If [withProperties] is
@@ -106,14 +121,14 @@ class FlutterContacts {
   /// mainly to avoid the case (common on Android) where multiple equivalent
   /// phones are returned.
   static Future<Contact?> getContact(
-    String id, {
-    bool withProperties = true,
-    bool withThumbnail = true,
-    bool withPhoto = true,
-    bool withGroups = false,
-    bool withAccounts = false,
-    bool deduplicateProperties = true,
-  }) async {
+      String id, {
+        bool withProperties = true,
+        bool withThumbnail = true,
+        bool withPhoto = true,
+        bool withGroups = false,
+        bool withAccounts = false,
+        bool deduplicateProperties = true,
+      }) async {
     final contacts = await _select(
       id: id,
       withProperties: withProperties,
@@ -166,7 +181,7 @@ class FlutterContacts {
         !contact.accounts.any((x) => x.rawId.isNotEmpty)) {
       throw Exception(
           'Cannot update contact without raw ID on Android, make sure to '
-          'specify `withAccounts: true` when fetching contacts');
+              'specify `withAccounts: true` when fetching contacts');
     }
     // This avoids the accidental case where we try to update a contact before
     // fetching all their properties or photos, which would erase the existing
@@ -174,8 +189,8 @@ class FlutterContacts {
     if (!contact.propertiesFetched || !contact.photoFetched) {
       throw Exception(
           'Cannot update contact without properties and photo, make sure to '
-          'specify `withProperties: true` and `withPhoto: true` when fetching '
-          'contacts');
+              'specify `withProperties: true` and `withPhoto: true` when fetching '
+              'contacts');
     }
     if (!contact.isUnified) {
       throw Exception('Cannot update raw contacts');
@@ -318,6 +333,22 @@ class FlutterContacts {
   static int _compareDisplayNames(Contact a, Contact b) {
     var x = _normalizeName(a.displayName);
     var y = _normalizeName(b.displayName);
+    if (x.isEmpty && y.isNotEmpty) return 1;
+    if (x.isEmpty && y.isEmpty) return 0;
+    if (x.isNotEmpty && y.isEmpty) return -1;
+    if (_alpha.hasMatch(x[0]) && !_alpha.hasMatch(y[0])) return -1;
+    if (!_alpha.hasMatch(x[0]) && _alpha.hasMatch(y[0])) return 1;
+    if (!_alpha.hasMatch(x[0]) && !_alpha.hasMatch(y[0])) {
+      if (_numeric.hasMatch(x[0]) && !_numeric.hasMatch(y[0])) return -1;
+      if (!_numeric.hasMatch(x[0]) && _numeric.hasMatch(y[0])) return 1;
+    }
+    return x.compareTo(y);
+  }
+
+
+  static int _compareGroupNames(Group a, Group b) {
+    var x = _normalizeName(a.name);
+    var y = _normalizeName(b.name);
     if (x.isEmpty && y.isNotEmpty) return 1;
     if (x.isEmpty && y.isEmpty) return 0;
     if (x.isNotEmpty && y.isEmpty) return -1;

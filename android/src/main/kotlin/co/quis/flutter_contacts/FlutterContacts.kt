@@ -10,8 +10,8 @@ import android.content.Intent
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.net.Uri
-import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Email
+
 import android.provider.ContactsContract.CommonDataKinds.Event
 import android.provider.ContactsContract.CommonDataKinds.GroupMembership
 import android.provider.ContactsContract.CommonDataKinds.Im
@@ -27,9 +27,12 @@ import android.provider.ContactsContract.Contacts
 import android.provider.ContactsContract.Data
 import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
+import android.util.SparseArray
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.*
+import kotlin.collections.ArrayList
 import co.quis.flutter_contacts.properties.Account as PAccount
 import co.quis.flutter_contacts.properties.Address as PAddress
 import co.quis.flutter_contacts.properties.Email as PEmail
@@ -41,7 +44,12 @@ import co.quis.flutter_contacts.properties.Organization as POrganization
 import co.quis.flutter_contacts.properties.Phone as PPhone
 import co.quis.flutter_contacts.properties.SocialMedia as PSocialMedia
 import co.quis.flutter_contacts.properties.Website as PWebsite
-
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.provider.ContactsContract;
+import android.widget.Toast;
 class FlutterContacts {
     companion object {
         private val YYYY_MM_DD = """\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|30|31)""".toRegex()
@@ -408,10 +416,17 @@ class FlutterContacts {
             return contacts.map { it.toMap() }
         }
 
+        fun fetchAllGroups(resolver: ContentResolver): List<Map<String, Any?>> {
+            val groups = fetchGroups(resolver)
+            return groups.map { e -> e.value.toMap() }
+        }
+
         private fun fetchGroups(resolver: ContentResolver): Map<String, PGroup> {
             val projection = listOf(
                 Groups._ID,
                 Groups.TITLE
+                // Groups.ACCOUNT_NAME, // TODO use them later
+                // Groups.SUMMARY_COUNT // TODO use tthe later
             )
             val cursor = resolver.query(
                 Groups.CONTENT_URI,
@@ -427,6 +442,7 @@ class FlutterContacts {
             while (cursor.moveToNext()) {
                 val groupId = cursor.getString(cursor.getColumnIndex(Groups._ID)) ?: ""
                 val groupName = cursor.getString(cursor.getColumnIndex(Groups.TITLE)) ?: ""
+                //cursor.getString(1).toString() + " (" + cursor.getString(2) + ")"
                 groups[groupId] = PGroup(id = groupId, name = groupName)
             }
             return groups
@@ -896,8 +912,8 @@ class FlutterContacts {
             fun emptyToNull(s: String): String? = if (s.isEmpty()) "" else s
             fun eventToDate(e: PEvent): String =
                 (if (e.year == null) "--" else "${e.year.toString().padStart(4, '0')}-") +
-                    "${e.month.toString().padStart(2, '0')}-" +
-                    "${e.day.toString().padStart(2, '0')}"
+                        "${e.month.toString().padStart(2, '0')}-" +
+                        "${e.day.toString().padStart(2, '0')}"
             fun newInsert(): ContentProviderOperation.Builder =
                 if (rawContactId != null)
                     ContentProviderOperation

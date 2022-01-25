@@ -142,9 +142,9 @@ public class FlutterContactsPlugin : FlutterPlugin, MethodCallHandler, EventChan
         when (requestCode) {
             permissionReadWriteCode -> {
                 val granted = grantResults != null &&
-                    grantResults!!.size == 2 &&
-                    grantResults!![0] == PackageManager.PERMISSION_GRANTED &&
-                    grantResults!![1] == PackageManager.PERMISSION_GRANTED
+                        grantResults!!.size == 2 &&
+                        grantResults!![0] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults!![1] == PackageManager.PERMISSION_GRANTED
                 if (permissionResult != null) {
                     GlobalScope.launch(Dispatchers.Main) {
                         permissionResult!!.success(granted)
@@ -155,8 +155,8 @@ public class FlutterContactsPlugin : FlutterPlugin, MethodCallHandler, EventChan
             }
             permissionReadOnlyCode -> {
                 val granted = grantResults != null &&
-                    grantResults!!.size == 1 &&
-                    grantResults!![0] == PackageManager.PERMISSION_GRANTED
+                        grantResults!!.size == 1 &&
+                        grantResults!![0] == PackageManager.PERMISSION_GRANTED
                 if (permissionResult != null) {
                     GlobalScope.launch(Dispatchers.Main) {
                         permissionResult!!.success(granted)
@@ -240,6 +240,18 @@ public class FlutterContactsPlugin : FlutterPlugin, MethodCallHandler, EventChan
                         }
                     }
                 }
+            "groups" ->
+                GlobalScope.launch(Dispatchers.IO) {
+                    val groups = FlutterContacts.fetchAllGroups(resolver!!)
+                    GlobalScope.launch(Dispatchers.Main) {
+                        if (groups != null) {
+                            result.success(groups)
+                        } else {
+                            result.error("", "failed to fetch groups", "")
+                        }
+                    }
+                }
+
             // Updates an existing contact and returns it.
             "update" ->
                 GlobalScope.launch(Dispatchers.IO) {

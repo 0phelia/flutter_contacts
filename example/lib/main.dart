@@ -42,7 +42,14 @@ class _FlutterContactsExampleState extends State<FlutterContactsExample> {
             title: Text(_contacts![i].displayName),
             onTap: () async {
               final fullContact =
-                  await FlutterContacts.getContact(_contacts![i].id);
+              await FlutterContacts.getContact(_contacts![i].id);
+
+              final xx = await FlutterContacts.getGroups();
+              xx.forEach((element) {
+                print(element.name);
+              });
+
+
               await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => ContactPage(fullContact!)));
             }));
