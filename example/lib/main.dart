@@ -46,9 +46,13 @@ class _FlutterContactsExampleState extends State<FlutterContactsExample> {
 
               final xx = await FlutterContacts.getGroups();
               xx.forEach((element) {
-                print(element.name);
+                print('${element.name} ${element.id}');
               });
 
+              final yy = await FlutterContacts.contactsForGroup(groupId: '7');
+              yy.forEach((element) {
+                print(element.id);
+              });
 
               await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => ContactPage(fullContact!)));

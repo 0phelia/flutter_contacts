@@ -98,6 +98,19 @@ class FlutterContacts {
     return groups;
   }
 
+  static Future<List<Contact>> contactsForGroup({
+    required String groupId,
+  }) async {
+    List untypedGroups = await _channel.invokeMethod('contactsForGroup', groupId);
+    var contacts = untypedGroups
+        .map((x) => Contact.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
+    return contacts;
+  }
+
+
+
+
   /// Fetches one contact.
   ///
   /// By default everything available is fetched. If [withProperties] is

@@ -252,6 +252,20 @@ public class FlutterContactsPlugin : FlutterPlugin, MethodCallHandler, EventChan
                     }
                 }
 
+            "contactsForGroup" ->
+                GlobalScope.launch(Dispatchers.IO) {
+                    val groupId = call.arguments as String
+                    val contactsForGroup: List<Map<String, Any?>>? =
+                        FlutterContacts.fetchContactsForGroup(resolver!!, groupId)
+                    GlobalScope.launch(Dispatchers.Main) {
+                        if (contactsForGroup != null) {
+                            result.success(contactsForGroup)
+                        } else {
+                            result.error("", "failed to update contact", "")
+                        }
+                    }
+                }
+
             // Updates an existing contact and returns it.
             "update" ->
                 GlobalScope.launch(Dispatchers.IO) {

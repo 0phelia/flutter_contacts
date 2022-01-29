@@ -50,6 +50,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.provider.ContactsContract;
 import android.widget.Toast;
+import android.util.Log
+
 class FlutterContacts {
     companion object {
         private val YYYY_MM_DD = """\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|30|31)""".toRegex()
@@ -419,6 +421,40 @@ class FlutterContacts {
         fun fetchAllGroups(resolver: ContentResolver): List<Map<String, Any?>> {
             val groups = fetchGroups(resolver)
             return groups.map { e -> e.value.toMap() }
+        }
+
+        fun fetchContactsForGroup(resolver: ContentResolver, groupID: String): List<Map<String, Any?>> {
+            val projection =  listOf(
+                ContactsContract.Data.CONTACT_ID,// PROJECTION
+                ContactsContract.Data.DISPLAY_NAME,         // contact name
+                ContactsContract.Data.DATA1                 // group
+            ).toTypedArray()
+
+            val selectionArgs = listOf( // SELECTION_ARGS
+                ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE,
+                groupID
+            ).toTypedArray();
+            val dataCursor = resolver.query(
+                ContactsContract.Data.CONTENT_URI,
+                projection,
+                ContactsContract.Data.MIMETYPE + " = ? " + "AND " +               // SELECTION
+                        ContactsContract.Data.DATA1 +    " = ? ",           // set groupID
+                selectionArgs,
+                null)
+            dataCursor?.moveToFirst();
+
+            val contactsInGroup = mutableListOf<Contact>()
+            while (dataCursor.moveToNext()) {
+                val s0 = dataCursor?.getString(0) // contact_id
+                val s1 = dataCursor?.getString(1) // contact_name
+                val s2 = dataCursor?.getString(2) // group_id
+                Log.d("tag", "contact_id: $s0  contact: $s1   groupID: $s2")
+                if (s0 != null && s1 != null && s2 != null) {
+                    contactsInGroup.add(Contact(s0, displayName = s1))
+                }
+            }
+
+            return contactsInGroup.map { e -> e.toMap() }
         }
 
         private fun fetchGroups(resolver: ContentResolver): Map<String, PGroup> {
